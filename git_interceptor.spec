@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(
-    ['git_enterceptor.py'],
+    ['git_interceptor.py'],
     pathex=[],
     binaries=[],
     datas=[],
@@ -28,7 +28,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='git_enterceptor',
+    name='git_interceptor',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
