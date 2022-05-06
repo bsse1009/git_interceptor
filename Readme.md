@@ -16,7 +16,7 @@ It will create a git_interceptor.exe file in your_repo/dist directory. Rename th
 ## System set-up for Linux
 Run following two command.
 ```
-sudo cp /bin/git gitold
+sudo cp /bin/git /bin/gitold
 sudo cp your_dir/dist/git /bin/
 ```
 
