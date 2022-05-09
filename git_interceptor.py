@@ -12,18 +12,15 @@ mydb = myclient["mydb"]
 mycol = mydb["tasks"]
 cwd = os.getcwd()
 PATH = f"{cwd}/.git/objects"
-firstCommand = os.path.basename(sys.argv[0])
 treeList = []
 blobList = []
 
 # argv = input("Enter command:$  ").strip().split()
-is_commit = firstCommand == 'git' and sys.argv[1] == 'commit'
+is_commit = sys.argv[0] == 'git' and sys.argv[1] == 'commit'
 tasks_dict = {}
-with open('/home/ibrahim-khalil/git_interceptor/tasks.json', 'r') as f:
+with open('/home/ibrahim/Desktop/git/tasks.json', 'r') as f:
     tasks_dict = json.load(f)
 
-# projectId = input("enter current project: ")
-# boardId = input("enter current board: ")
 
 projectId = "1"
 boardId = "12"
@@ -92,6 +89,7 @@ if is_commit:
     myclient.close()
 
 try:
+    firstCommand = os.path.basename(sys.argv[0])
     firstCommandSplits = firstCommand.split(".")
     if "." not in firstCommand:
         firstCommand = firstCommand.replace(firstCommand,
@@ -103,7 +101,7 @@ try:
         f'{firstCommandWord}old.{firstCommandExtension}')
     sys.argv[0] = firstCommand
 except Exception as ex:
-    assert True
+    assert True, ex
 command = ' '.join(sys.argv)
 file = open('log.txt','a+')
 file.write(command)
