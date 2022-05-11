@@ -4,3 +4,4 @@ dist
 log.txt
 git.spec
 git_interceptor.spec
+env

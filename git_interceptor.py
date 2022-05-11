@@ -18,7 +18,7 @@ blobList = []
 # argv = input("Enter command:$  ").strip().split()
 is_commit = sys.argv[0] == 'git' and sys.argv[1] == 'commit'
 tasks_dict = {}
-with open('/home/ibrahim/Desktop/git/tasks.json', 'r') as f:
+with open('/home/ibrahim-khalil/git_interceptor/tasks.json', 'r') as f:
     tasks_dict = json.load(f)
 
 
@@ -45,6 +45,12 @@ def find_objects(root):
   global blobList
   commandTree = f'gitold cat-file -p {root} | grep tree'
   commandBlob = f'gitold cat-file -p {root} | grep blob'
+  
+  if len(root)!=40:
+    return
+  isTree = subprocess.getstatusoutput(f"gitold cat-file -t {root}")[1] == 'tree'
+  if not isTree:
+    return
 
   trees = subprocess.getstatusoutput(commandTree)
   blobs = subprocess.getstatusoutput(commandBlob)

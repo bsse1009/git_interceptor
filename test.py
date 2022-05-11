@@ -5,7 +5,7 @@ import subprocess
 
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
-mydb = myclient["mydb"]
+mydb = myclient["tasks_db_test"]
 mycol = mydb["tasks"]
 
 record = mycol.find_one({})
@@ -17,7 +17,7 @@ blobs = pickle.loads(objects["blobs"])
 
 objects = [commit]+trees+blobs
 
-PATH = "/home/ibrahim/Desktop/AllTest/test2"
+PATH = "/home/ibrahim-khalil/Desktop/test/react-test"
 
 os.chdir(PATH)
 os.system('gitold init')
@@ -26,7 +26,10 @@ os.chdir('.git/objects/')
 for obj in objects:
     name, content = obj
     dir, file = name[:2], name[2:]
-    os.mkdir(dir)
+    try:
+        os.mkdir(dir)
+    except Exception as ex:
+        assert True
     with open(f"{dir}/{file}", 'wb') as f:
         f.write(content)
 
@@ -35,12 +38,16 @@ os.chdir(PATH)
 command = "gitold cat-file -p"
 
 def writeFile(fileName, contetnt):
-    with open(fileName, 'w') as f:
+    with open(fileName, 'w', encoding= 'unicode_escape') as f:
         f.write(contetnt)
 
 def treeTraverse(treeHash, dirName=None):
     if dirName != None:
-        os.mkdir(dirName)
+        try:
+            os.mkdir(dirName)
+        except Exception as ex:
+            assert True
+
     files = subprocess.getstatusoutput(f"{command} {treeHash} | grep blob")[1].split()
     dirs = subprocess.getstatusoutput(f"{command} {treeHash} | grep tree")[1].split()
     fileObjects = files[2::4]
@@ -51,9 +58,12 @@ def treeTraverse(treeHash, dirName=None):
             fileName = fileNames[i]
         else:
             fileName = f"{dirName}/{fileNames[i]}"
-        fileContent = subprocess.getstatusoutput(f"{command} {fileObjects[i]}")[1]
-        print(fileContent)
-        writeFile(fileName, fileContent)
+        f = fileObjects[i]
+        try:
+            fileContent = subprocess.getstatusoutput(f"{command} {fileObjects[i]}")[1]
+            writeFile(fileName, fileContent)
+        except Exception as ex:
+            assert True
     
     treeObjecs = dirs[2::4]
     dirNames = dirs[3::4]

@@ -3,8 +3,8 @@ import subprocess
 import bson, pickle
 import pymongo
 
-PATH = "/home/ibrahim/Desktop/AllTest/react-test/react/.git/objects"
-os.chdir('/home/ibrahim/Desktop/AllTest/react-test/react')
+PATH = "/home/ibrahim-khalil/Desktop/test/react/.git/objects"
+os.chdir('/home/ibrahim-khalil/Desktop/test/react')
 treeList = []
 blobList = []
 
@@ -26,21 +26,25 @@ def find_objects(root):
   global blobList
   commandTree = f'gitold cat-file -p {root} | grep tree'
   commandBlob = f'gitold cat-file -p {root} | grep blob'
-  # print(root)
+  if len(root)!=40:
+    return
+  isTree = subprocess.getstatusoutput(f"gitold cat-file -t {root}")[1] == 'tree'
+  if not isTree:
+    return
   trees = subprocess.getstatusoutput(commandTree)
   blobs = subprocess.getstatusoutput(commandBlob)
-  print(blobs)
   blobs = blobs[1].split()[2::4]
-  print(trees)
+  print(trees[1])
 
-  # blobList += blobs
-  # if trees[1] == '' or 'fetal' in trees[1]:
-  #   return
-  # treeObjects = trees[1].split()[2::4]
-  # print(len(treeObjects))
-  # treeList += treeObjects
-  # for treeO in treeObjects:
-  #   find_objects(treeO)
+
+  blobList += blobs
+  if trees[1] == '' or 'fetal' in trees[1]:
+    return
+  treeObjects = trees[1].split()[2::4]
+  print(len(treeObjects))
+  treeList += treeObjects
+  for treeO in treeObjects:
+    find_objects(treeO)
 
 
 def convert_into_binary(file_path):
@@ -56,11 +60,9 @@ root = Root[1].split(' ')[1]
 rootDir = root[:2]
 find_objects(root)
 
-print("Finally")
-
 rootObject = (root, convert_into_binary(find_files(root)[0]))
-treeObjects = [(tree, find_files(tree)[0]) for tree in treeList]
-blobObjects = [(blob, find_files(blob)[0]) for blob in blobList]
+treeObjects = [(tree, convert_into_binary(find_files(tree)[0])) for tree in treeList]
+blobObjects = [(blob, convert_into_binary(find_files(blob)[0])) for blob in blobList]
 
 object_dict = {}
 
