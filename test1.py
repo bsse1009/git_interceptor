@@ -3,13 +3,13 @@ import subprocess
 import bson, pickle
 import pymongo
 
-PATH = "/home/ibrahim-khalil/Desktop/test/react/.git/objects"
-os.chdir('/home/ibrahim-khalil/Desktop/test/react')
+PATH = "/home/ibrahim/Desktop/test/test1/.git/objects"
+os.chdir('/home/ibrahim/Desktop/test/test1')
 treeList = []
 blobList = []
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
-mydb = myclient["tasks_db_test"]
+mydb = myclient["tasks_db_test1"]
 mycol = mydb["tasks"]
 
 def find_files(filename, dir=PATH):
@@ -56,7 +56,7 @@ def convert_into_binary(file_path):
 
 commandRoot = 'gitold cat-file -p HEAD | grep tree'
 Root = subprocess.getstatusoutput(commandRoot)
-root = Root[1].split(' ')[1]
+root = Root[1].split()[1]
 rootDir = root[:2]
 find_objects(root)
 
