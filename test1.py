@@ -3,13 +3,13 @@ import subprocess
 import bson, pickle
 import pymongo
 
-PATH = "/home/ibrahim/Desktop/test/test1/.git/objects"
-os.chdir('/home/ibrahim/Desktop/test/test1')
+PATH = "/home/ibrahim/Desktop/test/bitbucket/dbus-cpp/.git/objects"
+os.chdir('/home/ibrahim/Desktop/test/bitbucket/dbus-cpp')
 treeList = []
 blobList = []
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
-mydb = myclient["tasks_db_test1"]
+mydb = myclient["tasks_db_bitbucket"]
 mycol = mydb["tasks"]
 
 def find_files(filename, dir=PATH):
@@ -21,27 +21,32 @@ def find_files(filename, dir=PATH):
   return result
 
 
+def isValidObject(treeHash, type):
+    if len(treeHash) != 40:
+        return False
+    try:
+        if subprocess.getstatusoutput(f"gitold cat-file -t {treeHash}")[1] != type:
+            return False
+    except Exception as e:
+        return False
+    return True
+
 def find_objects(root):
   global treeList
   global blobList
   commandTree = f'gitold cat-file -p {root} | grep tree'
   commandBlob = f'gitold cat-file -p {root} | grep blob'
-  if len(root)!=40:
-    return
-  isTree = subprocess.getstatusoutput(f"gitold cat-file -t {root}")[1] == 'tree'
-  if not isTree:
+  if not isValidObject(root, 'tree'):
     return
   trees = subprocess.getstatusoutput(commandTree)
   blobs = subprocess.getstatusoutput(commandBlob)
   blobs = blobs[1].split()[2::4]
-  print(trees[1])
-
-
+  # print(trees[1])
   blobList += blobs
   if trees[1] == '' or 'fetal' in trees[1]:
     return
   treeObjects = trees[1].split()[2::4]
-  print(len(treeObjects))
+  # print(len(treeObjects))
   treeList += treeObjects
   for treeO in treeObjects:
     find_objects(treeO)
@@ -75,11 +80,4 @@ object_dict['objects'] = {
 x = mycol.insert_one(object_dict)
 print(f"inserted successfully {x.inserted_id}")
 myclient.close()
-
-
-
-
-
-
-
 

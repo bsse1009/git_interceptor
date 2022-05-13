@@ -1,24 +1,21 @@
-from operator import le
 import pymongo
 import pickle
 import os
-import subprocess
 
 
 myclient = pymongo.MongoClient("mongodb://localhost:27017/")
-mydb = myclient["tasks_db_test1"]
+mydb = myclient["tasks_db_gitlab"]
 mycol = mydb["tasks"]
 
 record = mycol.find_one({})
 objects = record['objects']
-# print(objects)
 commit = pickle.loads(objects["commit"])
 trees = pickle.loads(objects["trees"])
 blobs = pickle.loads(objects["blobs"])
 
 objects = [commit]+trees+blobs
 
-PATH = "/home/ibrahim/Desktop/test/test1Res"
+PATH = "/home/ibrahim/Desktop/test/bitbucket/dbus-cpp-test"
 
 os.chdir(PATH)
 os.system('gitold init')
@@ -36,8 +33,23 @@ for obj in objects:
 
 
 os.chdir(PATH)
-command = "gitold cat-file -p"
 
+os.system(f"gitold checkout {commit[0]} -- .")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
 def isValidObject(treeHash, type):
     if len(treeHash) != 40:
         return False
@@ -50,11 +62,15 @@ def isValidObject(treeHash, type):
     return True
 
 def writeFile(fileName, contetnt):
+    print(fileName)
     with open(fileName, 'w', encoding= 'unicode_escape') as f:
         f.write(contetnt)
 
 def writeBinaryFiles(fileName, content):
-    pass
+    print(content)
+    with open(fileName, 'wb') as f:
+        with open(f'./.git/objects/{content[:2]}/{content[2:]}', 'rb') as f1:
+            f.write(f1.read())
 
 def treeTraverse(treeHash, dirName=None):
     try:
@@ -94,7 +110,9 @@ def treeTraverse(treeHash, dirName=None):
         if not isValidObject(tree, 'tree'):
             continue
         treeTraverse(tree, dirName)
-        dirNameSplit = dirName.split('/')[:-1]
-        dirName = '/'.join(dirNameSplit) 
+        # dirNameSplit = dirName.split('/')[:-1]
+        # dirName = '/'.join(dirNameSplit) 
 
-treeTraverse(commit[0])
+# print(commit[0])
+# treeTraverse(commit[0])
+'''
