@@ -15,10 +15,9 @@ PATH = f"{cwd}/.git/objects"
 treeList = []
 blobList = []
 
-# argv = input("Enter command:$  ").strip().split()
 is_commit = sys.argv[0] == 'git' and sys.argv[1] == 'commit'
 tasks_dict = {}
-with open('/home/ibrahim-khalil/git_interceptor/tasks.json', 'r') as f:
+with open('/home/ibrahim/Desktop/git/git_interceptor/tasks.json', 'r') as f:
     tasks_dict = json.load(f)
 
 
@@ -39,25 +38,28 @@ def get_current_task():
             latest_task = task
     return latest_task
 
+def isValidObject(treeHash, type):
+    if len(treeHash) != 40:
+        return False
+    try:
+        if subprocess.getstatusoutput(f"gitold cat-file -t {treeHash}")[1] != type:
+            return False
+    except Exception as e:
+        return False
+    return True
 
 def find_objects(root):
   global treeList
   global blobList
+  if not isValidObject(root, 'tree'):
+    return
   commandTree = f'gitold cat-file -p {root} | grep tree'
   commandBlob = f'gitold cat-file -p {root} | grep blob'
-  
-  if len(root)!=40:
-    return
-  isTree = subprocess.getstatusoutput(f"gitold cat-file -t {root}")[1] == 'tree'
-  if not isTree:
-    return
-
   trees = subprocess.getstatusoutput(commandTree)
   blobs = subprocess.getstatusoutput(commandBlob)
   blobs = blobs[1].split()[2::4]
   blobList += blobs
-
-  if trees[1] == '':
+  if trees[1] == '' or 'fetal' in trees[1]:
     return
   treeObjects = trees[1].split()[2::4]
   treeList += treeObjects
@@ -65,7 +67,7 @@ def find_objects(root):
     find_objects(treeO)
 
 current_task = get_current_task()
-print(current_task)
+# print(current_task)
 uid = 11
 
 object_dict = {
@@ -76,7 +78,7 @@ object_dict = {
 if is_commit:
     commandRoot = 'gitold cat-file -p HEAD | grep tree'
     Root = subprocess.getstatusoutput(commandRoot)
-    root = Root[1].split(' ')[1]
+    root = Root[1].split()[1]
     rootDir = root[:2]
     find_objects(root)
 
