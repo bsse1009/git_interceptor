@@ -1,6 +1,11 @@
 import os
 
-def find_files(filename, dir):
+
+
+CWD = os.getcwd()
+PATH = f"{CWD}/.git/objects"
+
+def find_files(filename, dir = PATH):
   result = []
   filename = filename[2:]
   for root, dir, files in os.walk(dir):  # Wlaking top-down from the root
