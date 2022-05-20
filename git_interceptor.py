@@ -5,38 +5,59 @@ import pymongo
 import bson
 import pickle
 import subprocess
+from sys import platform
+
 from utils import *
 
-myclient = pymongo.MongoClient("mongodb://localhost:27017/")
-mydb = myclient["mydb"]
-mycol = mydb["tasks"]
-cwd = os.getcwd()
-PATH = f"{cwd}/.git/objects"
+mongoClient = pymongo.MongoClient("mongodb://localhost:27017/")
+myDB = mongoClient["mydb"]
+myCollection = myDB["tasks"]
+CWD = os.getcwd()
+PATH = f"{CWD}/.git/objects"
+jsonPath = 'C:/Users/user/Desktop/git_interceptor/tasks.json'
+
+uID = 11
+projectID = "1"
+boardID = "12"
 treeList = []
 blobList = []
+taskDict = {}
+objectDict = {}
+system = "linux"
+filter = "grep"
 
-is_commit = sys.argv[0] == 'git' and sys.argv[1] == 'commit'
-tasks_dict = {}
-with open('/home/ibrahim/Desktop/git/git_interceptor/tasks.json', 'r') as f:
-    tasks_dict = json.load(f)
+try:
+    if platform == "linux" or platform == "linux2":
+        system = "linux"
+    elif platform == "darwin":
+        system = "OS X"
+    elif platform == "win32":
+        system = "windows"
+
+    filter = "grep" if system == "linux" else "findstr"
+    isCommit = sys.argv[0] == 'git' and sys.argv[1] == 'commit'
+    with open(jsonPath, 'r') as f:
+        taskDict = json.load(f)
+    currentProject = [project for project in taskDict["project"]
+                      if project["id"] == projectID][0]
+    currentBoard = [board for board in currentProject["board"]
+                    if board["id"] == boardID][0]
+except Exception as e:
+    assert True
 
 
-projectId = "1"
-boardId = "12"
-currentProject = [project for project in tasks_dict["project"] if project["id"] == projectId][0]
-currentBoard = [board for board in currentProject["board"] if board["id"] == boardId][0]
-
-
-def get_current_task():
+def getCurrentTask():
     tasks = currentBoard["tasks"]
     last_end = '00: 00: 00'
     latest_task = None
     for task in tasks:
-        last_end_task = sorted(task["times"], key=lambda d: d['end'])[-1]['end']
+        last_end_task = sorted(
+            task["times"], key=lambda d: d['end'])[-1]['end']
         if last_end < last_end_task:
             last_end = last_end_task
             latest_task = task
     return latest_task
+
 
 def isValidObject(treeHash, type):
     if len(treeHash) != 40:
@@ -48,71 +69,75 @@ def isValidObject(treeHash, type):
         return False
     return True
 
-def find_objects(root):
-  global treeList
-  global blobList
-  if not isValidObject(root, 'tree'):
-    return
-  commandTree = f'gitold cat-file -p {root} | grep tree'
-  commandBlob = f'gitold cat-file -p {root} | grep blob'
-  trees = subprocess.getstatusoutput(commandTree)
-  blobs = subprocess.getstatusoutput(commandBlob)
-  blobs = blobs[1].split()[2::4]
-  blobList += blobs
-  if trees[1] == '' or 'fetal' in trees[1]:
-    return
-  treeObjects = trees[1].split()[2::4]
-  treeList += treeObjects
-  for treeO in treeObjects:
-    find_objects(treeO)
 
-current_task = get_current_task()
-# print(current_task)
-uid = 11
+def findObjects(root):
+    global treeList
+    global blobList
+    if not isValidObject(root, 'tree'):
+        return
+    commandTree = f'gitold cat-file -p {root} | {filter} tree'
+    commandBlob = f'gitold cat-file -p {root} | {filter} blob'
+    trees = subprocess.getstatusoutput(commandTree)
+    blobs = subprocess.getstatusoutput(commandBlob)
+    blobs = blobs[1].split()[2::4]
+    blobList += blobs
+    if trees[1] == '' or 'fetal' in trees[1]:
+        return
+    treeObjects = trees[1].split()[2::4]
+    treeList += treeObjects
+    for treeO in treeObjects:
+        findObjects(treeO)
 
-object_dict = {
-    'user_id': uid,
-    'task_id': current_task["id"]
-}
 
-if is_commit:
-    commandRoot = 'gitold cat-file -p HEAD | grep tree'
+currentTask = getCurrentTask()
+objectDict['uID'] = uID
+objectDict['taskID'] = currentTask['id']
+
+if isCommit:
+    commandRoot = f'gitold cat-file -p HEAD | {filter} tree'
     Root = subprocess.getstatusoutput(commandRoot)
     root = Root[1].split()[1]
     rootDir = root[:2]
-    find_objects(root)
+    findObjects(root)
 
     rootObject = (root, convert_into_binary(find_files(root, PATH)[0]))
-    treeObjects = [(tree, convert_into_binary(find_files(tree, PATH)[0])) for tree in treeList]
-    blobObjects = [(blob, convert_into_binary(find_files(blob, PATH)[0])) for blob in blobList]
+    treeObjects = [(tree, convert_into_binary(find_files(tree)[0])) if
+                   isValidObject(tree, 'tree') else None
+                   for tree in treeList]
+    blobObjects = [(blob, convert_into_binary(find_files(blob)[0])) if
+                   isValidObject(blob, 'blob') else None
+                   for blob in blobList]
 
-    object_dict['objects'] = {
+    treeObjects = [value for value in treeObjects if value != None]
+    blobObjects = [value for value in blobObjects if value != None]
+
+    objectDict['objects'] = {
         'commit': bson.Binary(pickle.dumps(rootObject)),
         'trees': bson.Binary(pickle.dumps(treeObjects)),
         'blobs': bson.Binary(pickle.dumps(blobObjects))
     }
-    
-    x = mycol.insert_one(object_dict)
+
+    x = myCollection.insert_one(objectDict)
     print(f"inserted successfully {x.inserted_id}")
-    myclient.close()
+    mongoClient.close()
 
 try:
     firstCommand = os.path.basename(sys.argv[0])
     firstCommandSplits = firstCommand.split(".")
     if "." not in firstCommand:
         firstCommand = firstCommand.replace(firstCommand,
-        f'{sys.argv[0]}old')
+                                            f'{sys.argv[0]}old')
     else:
         firstCommandWord = firstCommandSplits[0]
         firstCommandExtension = firstCommandSplits[1]
-        firstCommand = firstCommand.replace(sys.argv[0], 
-        f'{firstCommandWord}old.{firstCommandExtension}')
+        firstCommand = firstCommand.replace(sys.argv[0],
+                                            f'{firstCommandWord}old.{firstCommandExtension}')
     sys.argv[0] = firstCommand
 except Exception as ex:
     assert True, ex
 command = ' '.join(sys.argv)
-file = open('log.txt','a+')
+file = open('log.txt', 'a+')
 file.write(command)
-file.write('\n')
+file.write('/n')
 file.close()
 os.system(command)
