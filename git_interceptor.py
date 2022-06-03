@@ -27,9 +27,9 @@ myDB = mongoClient["test"]
 myCollection = myDB["commit"]
 CWD = os.getcwd()
 PATH = f"{CWD}/.git/objects"
-jsonPath = '/home/ibrahim/Desktop/git_interceptor/tasks.json'
+jsonPath = ''
 
-uID = 11
+uid = {}
 projectID = "1"
 boardID = "12"
 treeList = []
@@ -37,18 +37,37 @@ blobList = []
 taskDict = {}
 objectDict = {}
 system = "linux"
-filter = "grep"
-
+filters = "grep"
+isCommit = ""
 try:
     if platform == "linux" or platform == "linux2":
+
         system = "linux"
+        uidPath = '/home/uid.json'
+        jsonPath = '/home/tasks.json'
+        with open(uidPath, 'r') as f:
+            uid = json.load(f)
     elif platform == "darwin":
         system = "OS X"
     elif platform == "win32":
         system = "windows"
+        uidPath = 'C:\\uid.json'
+        jsonPath = 'C:\\tasks.json'
 
-    filter = "grep" if system == "linux" else "findstr"
-    isCommit = sys.argv[0] == 'git' and sys.argv[1] == 'commit'
+        with open(uidPath, 'r') as f:
+            uid = json.load(f)
+            print(uid)
+
+
+    if system == 'linux':
+        filters = "grep"
+        isCommit = sys.argv[0] == 'git' and sys.argv[1] == 'commit'
+
+
+    else:
+        filters = "findstr"
+        isCommit = sys.argv[0] == 'git.exe' and sys.argv[1] == 'commit'
+
     with open(jsonPath, 'r') as f:
         taskDict = json.load(f)
     currentProject = [project for project in taskDict["project"]
@@ -88,8 +107,8 @@ def findObjects(root):
     global blobList
     if not isValidObject(root, 'tree'):
         return
-    commandTree = f'gitold cat-file -p {root} | {filter} tree'
-    commandBlob = f'gitold cat-file -p {root} | {filter} blob'
+    commandTree = f'gitold cat-file -p {root} | {filters} tree'
+    commandBlob = f'gitold cat-file -p {root} | {filters} blob'
     trees = subprocess.getstatusoutput(commandTree)
     blobs = subprocess.getstatusoutput(commandBlob)
     blobs = blobs[1].split()[2::4]
@@ -103,12 +122,14 @@ def findObjects(root):
 
 
 currentTask = getCurrentTask()
-objectDict['uID'] = uID
+print('NAX')
+print(uid)
+objectDict['uID'] = uid['id']
 objectDict['taskID'] = currentTask['id']
 
 try:
     if isCommit:
-        commandRoot = f'gitold cat-file -p HEAD | {filter} tree'
+        commandRoot = f'gitold cat-file -p HEAD | {filters} tree'
         Root = subprocess.getstatusoutput(commandRoot)
         root = Root[1].split()[1]
         rootDir = root[:2]
