@@ -1,3 +1,16 @@
+'''
+    @Author: Md. Ibrahim Khalil
+    last_update: 03-06-2022
+
+    Install git_interceptor: pyinstaller --noconfirm --onedir --console --onefile git_interceptor.py
+'''
+
+
+
+
+
+
+
 import os
 import sys
 import json
@@ -8,13 +21,13 @@ import subprocess
 from sys import platform
 
 from utils import *
-
-mongoClient = pymongo.MongoClient("mongodb://localhost:27017/")
-myDB = mongoClient["mydb"]
-myCollection = myDB["tasks"]
+# localhost_connection_string :   mongodb://localhost:27017/
+mongoClient = pymongo.MongoClient("mongodb+srv://test:test@cluster0.imemt.mongodb.net/?retryWrites=true&w=majority")
+myDB = mongoClient["test"]
+myCollection = myDB["commit"]
 CWD = os.getcwd()
 PATH = f"{CWD}/.git/objects"
-jsonPath = 'C:/Users/user/Desktop/git_interceptor/tasks.json'
+jsonPath = '/home/ibrahim/Desktop/git_interceptor/tasks.json'
 
 uID = 11
 projectID = "1"
@@ -43,7 +56,7 @@ try:
     currentBoard = [board for board in currentProject["board"]
                     if board["id"] == boardID][0]
 except Exception as e:
-    assert True
+    assert True, f'error message: {str(e)}'
 
 
 def getCurrentTask():
@@ -93,33 +106,36 @@ currentTask = getCurrentTask()
 objectDict['uID'] = uID
 objectDict['taskID'] = currentTask['id']
 
-if isCommit:
-    commandRoot = f'gitold cat-file -p HEAD | {filter} tree'
-    Root = subprocess.getstatusoutput(commandRoot)
-    root = Root[1].split()[1]
-    rootDir = root[:2]
-    findObjects(root)
+try:
+    if isCommit:
+        commandRoot = f'gitold cat-file -p HEAD | {filter} tree'
+        Root = subprocess.getstatusoutput(commandRoot)
+        root = Root[1].split()[1]
+        rootDir = root[:2]
+        findObjects(root)
 
-    rootObject = (root, convert_into_binary(find_files(root, PATH)[0]))
-    treeObjects = [(tree, convert_into_binary(find_files(tree)[0])) if
-                   isValidObject(tree, 'tree') else None
-                   for tree in treeList]
-    blobObjects = [(blob, convert_into_binary(find_files(blob)[0])) if
-                   isValidObject(blob, 'blob') else None
-                   for blob in blobList]
+        rootObject = (root, convert_into_binary(find_files(root, PATH)[0]))
+        treeObjects = [(tree, convert_into_binary(find_files(tree)[0])) if
+                    isValidObject(tree, 'tree') else None
+                    for tree in treeList]
+        blobObjects = [(blob, convert_into_binary(find_files(blob)[0])) if
+                    isValidObject(blob, 'blob') else None
+                    for blob in blobList]
 
-    treeObjects = [value for value in treeObjects if value != None]
-    blobObjects = [value for value in blobObjects if value != None]
+        treeObjects = [value for value in treeObjects if value != None]
+        blobObjects = [value for value in blobObjects if value != None]
 
-    objectDict['objects'] = {
-        'commit': bson.Binary(pickle.dumps(rootObject)),
-        'trees': bson.Binary(pickle.dumps(treeObjects)),
-        'blobs': bson.Binary(pickle.dumps(blobObjects))
-    }
+        objectDict['objects'] = {
+            'commit': bson.Binary(pickle.dumps(rootObject)),
+            'trees': bson.Binary(pickle.dumps(treeObjects)),
+            'blobs': bson.Binary(pickle.dumps(blobObjects))
+        }
 
-    x = myCollection.insert_one(objectDict)
-    print(f"inserted successfully {x.inserted_id}")
-    mongoClient.close()
+        x = myCollection.insert_one(objectDict)
+        print(f"inserted successfully {x.inserted_id}")
+        mongoClient.close()
+except Exception as e:
+    assert True, f'error message: {str(e)}'
 
 try:
     firstCommand = os.path.basename(sys.argv[0])
@@ -134,7 +150,7 @@ try:
                                             f'{firstCommandWord}old.{firstCommandExtension}')
     sys.argv[0] = firstCommand
 except Exception as ex:
-    assert True, ex
+    assert True, f'error message: {str(ex)}'
 command = ' '.join(sys.argv)
 file = open('log.txt', 'a+')
 file.write(command)

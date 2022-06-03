@@ -6,16 +6,16 @@ import pymongo
 from sys import platform
 
 
-PATH = "C:/Users/user/Desktop/Temp/test/.git/objects"
-os.chdir('C:/Users/user/Desktop/Temp/test')
+PATH = "/home/ibrahim/Desktop/test/test1/.git/objects"
+os.chdir('/home/ibrahim/Desktop/test/test1')
 treeList = []
 blobList = []
 system = "linux" if platform == "linux" or platform == "linux2" else "windows"
 filter = "grep" if system == "linux" else "findstr"
 
-myclient = pymongo.MongoClient("mongodb://localhost:27017/")
-mydb = myclient["tasks_db_test"]
-mycol = mydb["tasks"]
+myclient = pymongo.MongoClient("mongodb+srv://test:test@cluster0.imemt.mongodb.net/?retryWrites=true&w=majority")
+mydb = myclient["test"]
+mycol = mydb["commit"]
 
 
 def find_files(filename, dir=PATH):
