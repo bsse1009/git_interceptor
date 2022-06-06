@@ -19,6 +19,7 @@ import bson
 import pickle
 import subprocess
 from sys import platform
+from bson.objectid import ObjectId
 
 from utils import *
 # localhost_connection_string :   mongodb://localhost:27017/
@@ -39,6 +40,7 @@ objectDict = {}
 system = "linux"
 filters = "grep"
 isCommit = ""
+
 try:
     if platform == "linux" or platform == "linux2":
 
@@ -70,25 +72,34 @@ try:
 
     with open(jsonPath, 'r') as f:
         taskDict = json.load(f)
+
+    '''
     currentProject = [project for project in taskDict["project"]
                       if project["id"] == projectID][0]
     currentBoard = [board for board in currentProject["board"]
                     if board["id"] == boardID][0]
+    '''
+    
 except Exception as e:
-    assert True, f'error message: {str(e)}'
+    print(f'error message from congigure: {str(e)}')
+    assert True, f'error message from congigure: {str(e)}'
 
 
 def getCurrentTask():
-    tasks = currentBoard["tasks"]
-    last_end = '00: 00: 00'
-    latest_task = None
-    for task in tasks:
-        last_end_task = sorted(
-            task["times"], key=lambda d: d['end'])[-1]['end']
-        if last_end < last_end_task:
-            last_end = last_end_task
-            latest_task = task
-    return latest_task
+    try:
+        tasks = taskDict["tasks"]
+        last_end = 0
+        latest_task = None
+        for task in tasks:
+            last_end_task = sorted(
+                task["times"], key=lambda d: d['end'])[-1]['end']
+            last_end_task = int(last_end_task) if last_end_task != 'null' else 99999999999999
+            if last_end < last_end_task:
+                last_end = last_end_task
+                latest_task = task
+        return latest_task
+    except Exception as e:
+        print(f"error msg from getCurrentTask: {str(e)}")
 
 
 def isValidObject(treeHash, type):
@@ -122,9 +133,7 @@ def findObjects(root):
 
 
 currentTask = getCurrentTask()
-print('NAX')
-print(uid)
-objectDict['uID'] = uid['id']
+objectDict['uID'] = ObjectId(uid['id'])
 objectDict['taskID'] = currentTask['id']
 
 try:
@@ -156,7 +165,7 @@ try:
         print(f"inserted successfully {x.inserted_id}")
         mongoClient.close()
 except Exception as e:
-    assert True, f'error message: {str(e)}'
+    assert True, f'error message from commit: {str(e)}'
 
 try:
     firstCommand = os.path.basename(sys.argv[0])
@@ -171,7 +180,7 @@ try:
                                             f'{firstCommandWord}old.{firstCommandExtension}')
     sys.argv[0] = firstCommand
 except Exception as ex:
-    assert True, f'error message: {str(ex)}'
+    assert True, f'error message bypass: {str(ex)}'
 command = ' '.join(sys.argv)
 file = open('log.txt', 'a+')
 file.write(command)
